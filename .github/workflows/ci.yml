@@ -24,9 +24,10 @@ jobs:
       uses: Azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }} # Define secret variable in repository settings as per action documentation
+    
     - uses: Azure/get-keyvault-secrets@v1.0
       with:
-        keyvault: "kisodersTFkey"
+        keyvault: "KisodersTFStateKeys"
         secrets: 'rg, storage-account-name, container-name, storage-account-key'
       id: myGetSecretAction
       
