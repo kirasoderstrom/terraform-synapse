@@ -1,0 +1,56 @@
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ kisoders/build ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: 'Checkout'
+      uses: actions/checkout@kisoders/build
+
+      
+    - name: 'Azure Login'
+      uses: Azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }} # Define secret variable in repository settings as per action documentation
+    - uses: Azure/get-keyvault-secrets@v1.0
+      with:
+        keyvault: "kisodersTFkey"
+        secrets: 'rg, storage-account-name, container-name, storage-account-key'
+      id: myGetSecretAction
+      
+    - name: 'Terraform Init'
+      uses: hashicorp/terraform-github-actions@master
+      with:
+          tf_actions_version: 0.12.13
+          tf_actions_subcommand: 'init'
+          tf_actions_working_dir: '.'
+          tf_actions_comment: true
+          args: '-backend-config="storage_account_name=${{ steps.myGetSecretAction.outputs.storage-account-name }}" -backend-config="container_name=${{ steps.myGetSecretAction.outputs.container-name }}" -backend-config="access_key=${{ steps.myGetSecretAction.outputs.storage-account-key }}" -backend-config="key=terraform.tfstate"'
+    
+    - name: "Terraform Plan"
+      uses: hashicorp/terraform-github-actions@master
+      with:
+        tf_actions_version: 0.12.13
+        tf_actions_subcommand: "plan"
+        args: '-var="client_secret=${{ secrets.clientSecret }}"'
+    # Runs a single command using the runners shell
+    - name: Run a one-line script
+      run: echo Hello, world!
+
+    # Runs a set of commands using the runners shell
+    - name: Run a multi-line script
+      run: |
+        echo Add other actions to build,
+        echo test, and deploy your project.
